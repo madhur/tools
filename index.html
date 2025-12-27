@@ -58,8 +58,10 @@
             display: flex;
             gap: 15px;
             margin-bottom: 25px;
-            align-items: center;
+            align-items: flex-end;
+            justify-content: flex-start;
             flex-wrap: wrap;
+            position: relative;
         }
 
         .control-group {
@@ -82,6 +84,8 @@
             background: white;
             cursor: pointer;
             transition: border-color 0.3s;
+            height: 44px;
+            box-sizing: border-box;
         }
 
         select:hover {
@@ -95,7 +99,9 @@
         }
 
         .convert-btn {
-            padding: 12px 30px;
+            padding: 12px 50px;
+            min-width: 180px;
+            height: 44px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -104,22 +110,25 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            margin-left: auto;
+            box-sizing: border-box;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         .convert-btn:hover {
-            transform: translateY(-2px);
+            transform: translateX(-50%) translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
         .convert-btn:active {
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
         }
 
         .convert-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
+            transform: translateX(-50%);
         }
 
         .textboxes {
@@ -144,6 +153,29 @@
         @media (max-width: 768px) {
             .textboxes {
                 grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .convert-btn {
+                width: 100%;
+                min-width: auto;
+                position: static;
+                transform: none;
+            }
+
+            .convert-btn:hover {
+                transform: translateY(-2px);
+            }
+
+            .convert-btn:active {
+                transform: translateY(0);
+            }
+
+            .convert-btn:disabled {
+                transform: none;
             }
         }
 
@@ -332,11 +364,160 @@
         .tab-panel.active {
             display: block;
         }
+
+        /* Dark mode toggle button */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .dark-mode-toggle:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .header-container {
+            position: relative;
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.dark-mode .container {
+            background: #1e1e2e;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        body.dark-mode h1 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .subtitle {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode label {
+            color: #d0d0d0;
+        }
+
+        body.dark-mode select {
+            background: #2a2a3e;
+            color: #e0e0e0;
+            border-color: #3a3a4e;
+        }
+
+        body.dark-mode select:hover {
+            border-color: #667eea;
+        }
+
+        body.dark-mode select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        body.dark-mode .textbox-label {
+            color: #d0d0d0;
+        }
+
+        body.dark-mode .editor-wrapper {
+            border-color: #3a3a4e;
+            background: #1e1e2e;
+        }
+
+        body.dark-mode .editor-wrapper:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        body.dark-mode textarea {
+            background: #1e1e2e;
+            color: #e0e0e0;
+            border-color: #3a3a4e;
+        }
+
+        body.dark-mode textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        body.dark-mode .tabs {
+            border-bottom-color: #3a3a4e;
+        }
+
+        body.dark-mode .tab {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .tab:hover {
+            color: #667eea;
+        }
+
+        body.dark-mode .tab.active {
+            color: #667eea;
+        }
+
+        body.dark-mode .error-message {
+            background: #3a1f1f;
+            color: #ff6b6b;
+            border-left-color: #ff6b6b;
+        }
+
+        body.dark-mode .success-message {
+            background: #1f3a1f;
+            color: #6bff6b;
+            border-left-color: #6bff6b;
+        }
+
+        body.dark-mode .info-text {
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .dark-mode-toggle {
+                position: static;
+                margin-bottom: 15px;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            h1 {
+                margin-bottom: 15px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>YAML/JSON Converter & JSON Minifier</h1>
+        <div class="header-container">
+            <h1>YAML/JSON Converter & JSON Minifier</h1>
+            <button class="dark-mode-toggle" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle dark mode">
+                <span id="dark-mode-icon">🌙</span>
+                <span id="dark-mode-text">Dark</span>
+            </button>
+        </div>
         <p class="subtitle">Convert between YAML and JSON-escaped format, or minify/unminify JSON (client-side only)</p>
         
         <div class="tabs">
@@ -507,8 +688,55 @@
         let joltSchema = '';
         let joltOutput = '';
 
+        // Dark mode functionality
+        function initDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                updateDarkModeButton(true);
+                updateCodeMirrorThemes('material');
+            } else {
+                document.body.classList.remove('dark-mode');
+                updateDarkModeButton(false);
+                updateCodeMirrorThemes('default');
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode);
+            updateDarkModeButton(isDarkMode);
+            updateCodeMirrorThemes(isDarkMode ? 'material' : 'default');
+        }
+
+        function updateDarkModeButton(isDarkMode) {
+            const icon = document.getElementById('dark-mode-icon');
+            const text = document.getElementById('dark-mode-text');
+            if (isDarkMode) {
+                icon.textContent = '☀️';
+                text.textContent = 'Light';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Dark';
+            }
+        }
+
+        function updateCodeMirrorThemes(theme) {
+            if (inputEditor) inputEditor.setOption('theme', theme);
+            if (outputEditor) outputEditor.setOption('theme', theme);
+            if (jsonInputEditor) jsonInputEditor.setOption('theme', theme);
+            if (jsonOutputEditor) jsonOutputEditor.setOption('theme', theme);
+            if (joltInputEditor) joltInputEditor.setOption('theme', theme);
+            if (joltSchemaEditor) joltSchemaEditor.setOption('theme', theme);
+            if (joltOutputEditor) joltOutputEditor.setOption('theme', theme);
+        }
+
         // Initialize CodeMirror editors
         function initEditors() {
+            // Get initial theme from localStorage
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            const initialTheme = isDarkMode ? 'material' : 'default';
+
             // YAML/JSON Escaped tab editors
             const inputTextarea = document.getElementById('input-text');
             const outputTextarea = document.getElementById('output-text');
@@ -516,7 +744,7 @@
             inputEditor = CodeMirror.fromTextArea(inputTextarea, {
                 lineNumbers: true,
                 mode: 'yaml',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 indentUnit: 2,
                 autofocus: false
@@ -525,7 +753,7 @@
             outputEditor = CodeMirror.fromTextArea(outputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 readOnly: true
             });
@@ -537,7 +765,7 @@
             jsonInputEditor = CodeMirror.fromTextArea(jsonInputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 indentUnit: 2,
                 autofocus: false
@@ -546,7 +774,7 @@
             jsonOutputEditor = CodeMirror.fromTextArea(jsonOutputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 readOnly: true
             });
@@ -559,7 +787,7 @@
             joltInputEditor = CodeMirror.fromTextArea(joltInputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 indentUnit: 2,
                 autofocus: false
@@ -568,7 +796,7 @@
             joltSchemaEditor = CodeMirror.fromTextArea(joltSchemaTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 indentUnit: 2,
                 autofocus: false
@@ -577,7 +805,7 @@
             joltOutputEditor = CodeMirror.fromTextArea(joltOutputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
-                theme: 'default',
+                theme: initialTheme,
                 lineWrapping: true,
                 readOnly: true
             });
@@ -1076,6 +1304,7 @@
 
         // Initialize editors when page loads
         window.addEventListener('DOMContentLoaded', function() {
+            initDarkMode();
             initEditors();
             updateInfoText();
             updateJsonInfoText();
