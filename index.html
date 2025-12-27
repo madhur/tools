@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAML/JSON Converter & JSON Minifier</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/theme/material.css">
+    <!-- CodeMirror JS -->
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/javascript/javascript.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/yaml/yaml.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:hover {
+            border-color: #667eea;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .convert-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-left: auto;
+        }
+
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .convert-btn:active {
+            transform: translateY(0);
+        }
+
+        .convert-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .textboxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .jolt-textboxes {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        @media (max-width: 1200px) {
+            .jolt-textboxes {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .textboxes {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .textbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .textbox-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: #3c3;
+        }
+
+        .editor-wrapper {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+            min-height: calc(100vh - 350px);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .editor-wrapper:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .CodeMirror {
+            height: auto;
+            min-height: calc(100vh - 350px);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            width: 100% !important;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .CodeMirror-scroll {
+            min-height: calc(100vh - 350px);
+            overflow-x: hidden !important;
+            overflow-y: auto;
+        }
+
+        .CodeMirror-lines {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .CodeMirror pre {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .CodeMirror-wrap pre {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Fallback for textarea (if CodeMirror fails to load) */
+        textarea {
+            width: 100%;
+            min-height: calc(100vh - 350px);
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3c3;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .info-text {
+            color: #888;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            top: 2px;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YAML/JSON Converter & JSON Minifier</h1>
+        <p class="subtitle">Convert between YAML and JSON-escaped format, or minify/unminify JSON (client-side only)</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('yaml-json')">YAML ↔ JSON Escaped</button>
+            <button class="tab" onclick="switchTab('json-minify')">JSON Minify/Unminify</button>
+            <button class="tab" onclick="switchTab('jolt-transform')">JOLT Transform</button>
+        </div>
+
+        <!-- YAML/JSON Escaped Tab -->
+        <div id="yaml-json-panel" class="tab-panel active">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="conversion-type">Conversion Type:</label>
+                    <select id="conversion-type">
+                        <option value="yaml-to-json">YAML → JSON Escaped</option>
+                        <option value="json-to-yaml">JSON Escaped → YAML</option>
+                    </select>
+                </div>
+                <button class="convert-btn" id="convert-btn" onclick="convertYamlJson()">Convert</button>
+            </div>
+
+            <div class="error-message" id="error-message"></div>
+            <div class="success-message" id="success-message"></div>
+
+            <div class="textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label" for="input-text">
+                        <span>Input:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('input-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="input-text" placeholder="Enter your YAML or JSON-escaped string here..."></textarea>
+                    </div>
+                    <span class="info-text" id="input-info"></span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="output-text">
+                        <span>Output:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('output-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="output-text" placeholder="Converted output will appear here..." readonly></textarea>
+                    </div>
+                    <span class="info-text" id="output-info"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Minify/Unminify Tab -->
+        <div id="json-minify-panel" class="tab-panel">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="json-operation">Operation:</label>
+                    <select id="json-operation">
+                        <option value="minify">Minify JSON</option>
+                        <option value="unminify">Unminify (Pretty Print)</option>
+                    </select>
+                </div>
+                <button class="convert-btn" id="json-convert-btn" onclick="convertJson()">Convert</button>
+            </div>
+
+            <div class="error-message" id="json-error-message"></div>
+            <div class="success-message" id="json-success-message"></div>
+
+            <div class="textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label" for="json-input-text">
+                        <span>Input:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('json-input-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="json-input-text" placeholder="Enter your JSON here..."></textarea>
+                    </div>
+                    <span class="info-text" id="json-input-info"></span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="json-output-text">
+                        <span>Output:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('json-output-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="json-output-text" placeholder="Converted output will appear here..." readonly></textarea>
+                    </div>
+                    <span class="info-text" id="json-output-info"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- JOLT Transform Tab -->
+        <div id="jolt-transform-panel" class="tab-panel">
+            <div class="controls">
+                <button class="convert-btn" id="jolt-transform-btn" onclick="transformJolt()">Transform</button>
+            </div>
+
+            <div class="error-message" id="jolt-error-message"></div>
+            <div class="success-message" id="jolt-success-message"></div>
+
+            <div class="textboxes jolt-textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label" for="jolt-input-text">
+                        <span>Input JSON:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="copy-btn" onclick="formatJson('jolt-input-text')" title="Format JSON">
+                                ✨ Format
+                            </button>
+                            <button class="copy-btn" onclick="copyToClipboard('jolt-input-text', this)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="jolt-input-text" placeholder="Enter your input JSON here..."></textarea>
+                    </div>
+                    <span class="info-text">Input JSON to be transformed</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="jolt-schema-text">
+                        <span>JOLT Schema:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="copy-btn" onclick="formatJson('jolt-schema-text')" title="Format JSON">
+                                ✨ Format
+                            </button>
+                            <button class="copy-btn" onclick="copyToClipboard('jolt-schema-text', this)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="jolt-schema-text" placeholder="Enter your JOLT transformation spec here..."></textarea>
+                    </div>
+                    <span class="info-text">JOLT transformation specification</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="jolt-output-text">
+                        <span>Output JSON:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('jolt-output-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="jolt-output-text" placeholder="Transformed JSON will appear here..." readonly></textarea>
+                    </div>
+                    <span class="info-text">Transformed JSON output</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CodeMirror editor instances
+        let inputEditor, outputEditor, jsonInputEditor, jsonOutputEditor;
+        let joltInputEditor, joltSchemaEditor, joltOutputEditor;
+
+        // Store content when switching tabs
+        let yamlJsonInput = '';
+        let yamlJsonOutput = '';
+        let jsonMinifyInput = '';
+        let jsonMinifyOutput = '';
+        let joltInput = '';
+        let joltSchema = '';
+        let joltOutput = '';
+
+        // Initialize CodeMirror editors
+        function initEditors() {
+            // YAML/JSON Escaped tab editors
+            const inputTextarea = document.getElementById('input-text');
+            const outputTextarea = document.getElementById('output-text');
+            
+            inputEditor = CodeMirror.fromTextArea(inputTextarea, {
+                lineNumbers: true,
+                mode: 'yaml',
+                theme: 'default',
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+
+            outputEditor = CodeMirror.fromTextArea(outputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                readOnly: true
+            });
+
+            // JSON Minify tab editors
+            const jsonInputTextarea = document.getElementById('json-input-text');
+            const jsonOutputTextarea = document.getElementById('json-output-text');
+            
+            jsonInputEditor = CodeMirror.fromTextArea(jsonInputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+
+            jsonOutputEditor = CodeMirror.fromTextArea(jsonOutputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                readOnly: true
+            });
+
+            // JOLT Transform tab editors
+            const joltInputTextarea = document.getElementById('jolt-input-text');
+            const joltSchemaTextarea = document.getElementById('jolt-schema-text');
+            const joltOutputTextarea = document.getElementById('jolt-output-text');
+            
+            joltInputEditor = CodeMirror.fromTextArea(joltInputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+
+            joltSchemaEditor = CodeMirror.fromTextArea(joltSchemaTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+
+            joltOutputEditor = CodeMirror.fromTextArea(joltOutputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: 'default',
+                lineWrapping: true,
+                readOnly: true
+            });
+
+            // Update mode when conversion type changes
+            document.getElementById('conversion-type').addEventListener('change', function() {
+                const conversionType = this.value;
+                if (conversionType === 'yaml-to-json') {
+                    inputEditor.setOption('mode', 'yaml');
+                    outputEditor.setOption('mode', 'javascript');
+                } else {
+                    inputEditor.setOption('mode', 'javascript');
+                    outputEditor.setOption('mode', 'yaml');
+                }
+            });
+
+            // Keyboard shortcuts
+            inputEditor.setOption('extraKeys', {
+                'Ctrl-Enter': function() { convertYamlJson(); },
+                'Cmd-Enter': function() { convertYamlJson(); }
+            });
+
+            jsonInputEditor.setOption('extraKeys', {
+                'Ctrl-Enter': function() { convertJson(); },
+                'Cmd-Enter': function() { convertJson(); }
+            });
+        }
+
+        // Format JSON function
+        function formatJson(editorId) {
+            let editor;
+            let text = '';
+            
+            // Get the appropriate editor
+            if (editorId === 'jolt-input-text') {
+                editor = joltInputEditor;
+                text = joltInputEditor.getValue();
+            } else if (editorId === 'jolt-schema-text') {
+                editor = joltSchemaEditor;
+                text = joltSchemaEditor.getValue();
+            } else {
+                return;
+            }
+
+            if (!text.trim()) {
+                return;
+            }
+
+            try {
+                const jsonObj = JSON.parse(text);
+                const formatted = JSON.stringify(jsonObj, null, 2);
+                editor.setValue(formatted);
+                editor.refresh();
+            } catch (error) {
+                showError('Invalid JSON: ' + error.message, 'jolt');
+            }
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(editorId, button) {
+            let text = '';
+            
+            // Get text from appropriate editor
+            if (editorId === 'input-text') {
+                text = inputEditor.getValue();
+            } else if (editorId === 'output-text') {
+                text = outputEditor.getValue();
+            } else if (editorId === 'json-input-text') {
+                text = jsonInputEditor.getValue();
+            } else if (editorId === 'json-output-text') {
+                text = jsonOutputEditor.getValue();
+            } else if (editorId === 'jolt-input-text') {
+                text = joltInputEditor.getValue();
+            } else if (editorId === 'jolt-schema-text') {
+                text = joltSchemaEditor.getValue();
+            } else if (editorId === 'jolt-output-text') {
+                text = joltOutputEditor.getValue();
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(function() {
+                // Visual feedback
+                const originalText = button.innerHTML;
+                button.innerHTML = '✓ Copied!';
+                button.classList.add('copied');
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✓ Copied!';
+                    button.classList.add('copied');
+                    setTimeout(function() {
+                        button.innerHTML = originalText;
+                        button.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    alert('Failed to copy: ' + err);
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Save current content before switching
+            if (document.getElementById('yaml-json-panel').classList.contains('active')) {
+                yamlJsonInput = inputEditor.getValue();
+                yamlJsonOutput = outputEditor.getValue();
+            } else if (document.getElementById('json-minify-panel').classList.contains('active')) {
+                jsonMinifyInput = jsonInputEditor.getValue();
+                jsonMinifyOutput = jsonOutputEditor.getValue();
+            } else if (document.getElementById('jolt-transform-panel').classList.contains('active')) {
+                joltInput = joltInputEditor.getValue();
+                joltSchema = joltSchemaEditor.getValue();
+                joltOutput = joltOutputEditor.getValue();
+            }
+
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            if (tabName === 'yaml-json') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('yaml-json-panel').classList.add('active');
+                // Restore content
+                inputEditor.setValue(yamlJsonInput);
+                outputEditor.setValue(yamlJsonOutput);
+                inputEditor.refresh();
+                outputEditor.refresh();
+            } else if (tabName === 'json-minify') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('json-minify-panel').classList.add('active');
+                // Restore content
+                jsonInputEditor.setValue(jsonMinifyInput);
+                jsonOutputEditor.setValue(jsonMinifyOutput);
+                jsonInputEditor.refresh();
+                jsonOutputEditor.refresh();
+            } else if (tabName === 'jolt-transform') {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('jolt-transform-panel').classList.add('active');
+                // Restore content
+                joltInputEditor.setValue(joltInput);
+                joltSchemaEditor.setValue(joltSchema);
+                joltOutputEditor.setValue(joltOutput);
+                joltInputEditor.refresh();
+                joltSchemaEditor.refresh();
+                joltOutputEditor.refresh();
+            }
+        }
+
+        // Update info text based on conversion type
+        document.getElementById('conversion-type').addEventListener('change', function() {
+            updateInfoText();
+            clearYamlJsonMessages();
+        });
+
+        document.getElementById('json-operation').addEventListener('change', function() {
+            updateJsonInfoText();
+            clearJsonMessages();
+        });
+
+        function updateInfoText() {
+            const conversionType = document.getElementById('conversion-type').value;
+            const inputInfo = document.getElementById('input-info');
+            const outputInfo = document.getElementById('output-info');
+            
+            if (conversionType === 'yaml-to-json') {
+                inputInfo.textContent = 'Enter YAML content';
+                outputInfo.textContent = 'JSON-escaped string output';
+            } else {
+                inputInfo.textContent = 'Enter JSON-escaped string';
+                outputInfo.textContent = 'YAML content output';
+            }
+        }
+
+        function updateJsonInfoText() {
+            const operation = document.getElementById('json-operation').value;
+            const inputInfo = document.getElementById('json-input-info');
+            const outputInfo = document.getElementById('json-output-info');
+            
+            if (operation === 'minify') {
+                inputInfo.textContent = 'Enter JSON (formatted or minified)';
+                outputInfo.textContent = 'Minified JSON (one line)';
+            } else {
+                inputInfo.textContent = 'Enter JSON (formatted or minified)';
+                outputInfo.textContent = 'Pretty-printed JSON';
+            }
+        }
+
+        function showError(message, panel = 'yaml-json') {
+            let errorDiv, successDiv;
+            if (panel === 'yaml-json') {
+                errorDiv = document.getElementById('error-message');
+                successDiv = document.getElementById('success-message');
+            } else if (panel === 'json') {
+                errorDiv = document.getElementById('json-error-message');
+                successDiv = document.getElementById('json-success-message');
+            } else if (panel === 'jolt') {
+                errorDiv = document.getElementById('jolt-error-message');
+                successDiv = document.getElementById('jolt-success-message');
+            }
+            
+            if (errorDiv && successDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('show');
+                successDiv.classList.remove('show');
+            }
+        }
+
+        function showSuccess(message, panel = 'yaml-json') {
+            let successDiv, errorDiv;
+            if (panel === 'yaml-json') {
+                successDiv = document.getElementById('success-message');
+                errorDiv = document.getElementById('error-message');
+            } else if (panel === 'json') {
+                successDiv = document.getElementById('json-success-message');
+                errorDiv = document.getElementById('json-error-message');
+            } else if (panel === 'jolt') {
+                successDiv = document.getElementById('jolt-success-message');
+                errorDiv = document.getElementById('jolt-error-message');
+            }
+            
+            if (successDiv && errorDiv) {
+                successDiv.textContent = message;
+                successDiv.classList.add('show');
+                errorDiv.classList.remove('show');
+            }
+        }
+
+        function clearJoltMessages() {
+            document.getElementById('jolt-error-message').classList.remove('show');
+            document.getElementById('jolt-success-message').classList.remove('show');
+        }
+
+        function clearYamlJsonMessages() {
+            document.getElementById('error-message').classList.remove('show');
+            document.getElementById('success-message').classList.remove('show');
+        }
+
+        function clearJsonMessages() {
+            document.getElementById('json-error-message').classList.remove('show');
+            document.getElementById('json-success-message').classList.remove('show');
+        }
+
+        function yamlToJsonEscaped(yamlContent, rawFormat = false) {
+            // Validate YAML first
+            try {
+                jsyaml.load(yamlContent);
+            } catch (e) {
+                throw new Error('Invalid YAML: ' + e.message);
+            }
+
+            if (rawFormat) {
+                // Return raw format with literal \n characters
+                return yamlContent.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+            } else {
+                // Use JSON.stringify to properly escape the string for JSON
+                return JSON.stringify(yamlContent);
+            }
+        }
+
+        function jsonEscapedToYaml(escapedString, rawFormat = false) {
+            if (rawFormat) {
+                // Handle raw format: convert literal \n back to actual newlines
+                return escapedString.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t');
+            } else {
+                // Remove surrounding quotes if present
+                let cleaned = escapedString.trim();
+                if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+                    (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+                    cleaned = cleaned.slice(1, -1);
+                }
+                
+                // Use JSON.parse to unescape the string
+                try {
+                    return JSON.parse('"' + cleaned + '"');
+                } catch (e) {
+                    // If it fails, try unescaping manually
+                    try {
+                        // Try to decode unicode escapes
+                        return cleaned.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => {
+                            return String.fromCharCode(parseInt(hex, 16));
+                        }).replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
+                          .replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                    } catch (e2) {
+                        // Last resort: try raw format
+                        return cleaned.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t');
+                    }
+                }
+            }
+        }
+
+        function validateYaml(yamlContent) {
+            try {
+                jsyaml.load(yamlContent);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function convertYamlJson() {
+            clearYamlJsonMessages();
+            
+            const conversionType = document.getElementById('conversion-type').value;
+            const inputText = inputEditor.getValue();
+
+            if (!inputText.trim()) {
+                showError('Please enter some input text.', 'yaml-json');
+                return;
+            }
+
+            try {
+                let result;
+                
+                if (conversionType === 'yaml-to-json') {
+                    // Convert YAML to JSON-escaped
+                    result = yamlToJsonEscaped(inputText, false);
+                    
+                    // Validate the input was valid YAML
+                    if (!validateYaml(inputText)) {
+                        showError('Warning: Input may not be valid YAML. Output generated anyway.', 'yaml-json');
+                    } else {
+                        showSuccess('Successfully converted YAML to JSON-escaped format!', 'yaml-json');
+                    }
+                    outputEditor.setOption('mode', 'javascript');
+                } else {
+                    // Convert JSON-escaped to YAML
+                    result = jsonEscapedToYaml(inputText, false);
+                    
+                    // Validate the resulting YAML
+                    if (!validateYaml(result)) {
+                        showError('Warning: Converted content may not be valid YAML. Output generated anyway.', 'yaml-json');
+                    } else {
+                        showSuccess('Successfully converted JSON-escaped format to YAML!', 'yaml-json');
+                    }
+                    outputEditor.setOption('mode', 'yaml');
+                }
+                
+                outputEditor.setValue(result);
+                outputEditor.refresh();
+            } catch (error) {
+                showError('Conversion error: ' + error.message, 'yaml-json');
+                outputEditor.setValue('');
+                outputEditor.refresh();
+            }
+        }
+
+        function convertJson() {
+            clearJsonMessages();
+            
+            const operation = document.getElementById('json-operation').value;
+            const inputText = jsonInputEditor.getValue();
+
+            if (!inputText.trim()) {
+                showError('Please enter some JSON input.', 'json');
+                return;
+            }
+
+            try {
+                // Parse JSON first to validate
+                const jsonObj = JSON.parse(inputText);
+                let result;
+                
+                if (operation === 'minify') {
+                    // Minify JSON (compact to one line)
+                    result = JSON.stringify(jsonObj);
+                    showSuccess('Successfully minified JSON!', 'json');
+                } else {
+                    // Unminify/Pretty print JSON
+                    result = JSON.stringify(jsonObj, null, 2);
+                    showSuccess('Successfully formatted JSON!', 'json');
+                }
+                
+                jsonOutputEditor.setValue(result);
+                // Force refresh and recalculate line wrapping for long lines
+                setTimeout(function() {
+                    jsonOutputEditor.refresh();
+                    jsonOutputEditor.setSize(null, null);
+                }, 10);
+            } catch (error) {
+                showError('Invalid JSON: ' + error.message, 'json');
+                jsonOutputEditor.setValue('');
+                jsonOutputEditor.refresh();
+            }
+        }
+
+        // JOLT API Configuration
+        const JOLT_API_URL = 'https://4072a9hifa.execute-api.ap-south-1.amazonaws.com/Prod';
+        const JOLT_API_KEY = ''; // Add your API Gateway API key here if required
+
+        // JOLT Transformation function
+        async function transformJolt() {
+            clearJoltMessages();
+            
+            const inputJson = joltInputEditor.getValue();
+            const joltSpec = joltSchemaEditor.getValue();
+
+            if (!inputJson.trim()) {
+                showError('Please enter input JSON.', 'jolt');
+                return;
+            }
+
+            if (!joltSpec.trim()) {
+                showError('Please enter JOLT transformation spec.', 'jolt');
+                return;
+            }
+
+            // Check if API is configured
+            if (!JOLT_API_URL) {
+                showError('JOLT API not configured. Please set JOLT_API_URL in the code.', 'jolt');
+                return;
+            }
+
+            try {
+                // Parse input JSON to validate
+                const inputData = JSON.parse(inputJson);
+                
+                // Parse JOLT spec to validate
+                const spec = JSON.parse(joltSpec);
+
+                // Show loading state
+                joltOutputEditor.setValue('Transforming...');
+                joltOutputEditor.refresh();
+
+                // Prepare headers
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Add API key if configured
+                if (JOLT_API_KEY) {
+                    headers['x-api-key'] = JOLT_API_KEY;
+                }
+                
+                // Call Lambda API
+                const response = await fetch(JOLT_API_URL, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        inputJson: inputData,
+                        joltSpec: spec
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Handle API Gateway errors
+                    const errorMsg = result.message || result.error || `HTTP ${response.status}: ${response.statusText}`;
+                    showError('API Error: ' + errorMsg, 'jolt');
+                    joltOutputEditor.setValue('');
+                    joltOutputEditor.refresh();
+                    return;
+                }
+
+                // Check Lambda response
+                if (result.statusCode && result.statusCode !== 200) {
+                    const errorMsg = result.error || 'Transformation failed';
+                    showError('Transformation Error: ' + errorMsg, 'jolt');
+                    joltOutputEditor.setValue('');
+                    joltOutputEditor.refresh();
+                    return;
+                }
+
+                // Success - format and display result
+                const transformedData = result.body || result;
+                const formattedResult = JSON.stringify(transformedData, null, 2);
+                joltOutputEditor.setValue(formattedResult);
+                joltOutputEditor.refresh();
+                showSuccess('Successfully transformed JSON!', 'jolt');
+                
+            } catch (error) {
+                if (error.message.includes('JSON') || error.name === 'SyntaxError') {
+                    showError('Invalid JSON: ' + error.message, 'jolt');
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showError('Network error: Unable to reach API. Please check JOLT_API_URL.', 'jolt');
+                } else {
+                    showError('Transformation error: ' + error.message, 'jolt');
+                }
+                joltOutputEditor.setValue('');
+                joltOutputEditor.refresh();
+            }
+        }
+
+        // Initialize editors when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            initEditors();
+            updateInfoText();
+            updateJsonInfoText();
+        });
+    </script>
+</body>
+</html>
