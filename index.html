@@ -524,6 +524,7 @@
             <button class="tab active" onclick="switchTab('yaml-json')">YAML ↔ JSON Escaped</button>
             <button class="tab" onclick="switchTab('json-minify')">JSON Minify/Unminify</button>
             <button class="tab" onclick="switchTab('jolt-transform')">JOLT Transform</button>
+            <button class="tab" onclick="switchTab('key-verify')">Key/Cert Verify</button>
         </div>
 
         <!-- YAML/JSON Escaped Tab -->
@@ -558,12 +559,17 @@
                 <div class="textbox-group">
                     <label class="textbox-label" for="output-text">
                         <span>Output:</span>
-                        <button class="copy-btn" onclick="copyToClipboard('output-text', this)" title="Copy to clipboard">
-                            📋 Copy
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="copy-btn" onclick="copyOutputToInput('yaml-json')" title="Copy output to input">
+                                ↶ Copy to Input
+                            </button>
+                            <button class="copy-btn" onclick="copyToClipboard('output-text', this)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </div>
                     </label>
                     <div class="editor-wrapper">
-                        <textarea id="output-text" placeholder="Converted output will appear here..." readonly></textarea>
+                        <textarea id="output-text" placeholder="Converted output will appear here... (You can edit this and copy back to input)"></textarea>
                     </div>
                     <span class="info-text" id="output-info"></span>
                 </div>
@@ -602,12 +608,17 @@
                 <div class="textbox-group">
                     <label class="textbox-label" for="json-output-text">
                         <span>Output:</span>
-                        <button class="copy-btn" onclick="copyToClipboard('json-output-text', this)" title="Copy to clipboard">
-                            📋 Copy
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="copy-btn" onclick="copyOutputToInput('json')" title="Copy output to input">
+                                ↶ Copy to Input
+                            </button>
+                            <button class="copy-btn" onclick="copyToClipboard('json-output-text', this)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </div>
                     </label>
                     <div class="editor-wrapper">
-                        <textarea id="json-output-text" placeholder="Converted output will appear here..." readonly></textarea>
+                        <textarea id="json-output-text" placeholder="Converted output will appear here... (You can edit this and copy back to input)"></textarea>
                     </div>
                     <span class="info-text" id="json-output-info"></span>
                 </div>
@@ -672,21 +683,125 @@
                 </div>
             </div>
         </div>
+
+        <!-- Key/Certificate Verification Tab -->
+        <div id="key-verify-panel" class="tab-panel">
+            <div class="controls">
+                <button class="convert-btn" id="key-verify-btn" onclick="verifyKeyCert()">Verify</button>
+            </div>
+
+            <div class="error-message" id="key-verify-error-message"></div>
+            <div class="success-message" id="key-verify-success-message"></div>
+
+            <div class="textboxes jolt-textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label" for="private-key-text">
+                        <span>Private Key:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('private-key-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="private-key-text" placeholder="Enter private key (PEM or base64 DER format)..."></textarea>
+                    </div>
+                    <span class="info-text">Private key in PEM or base64 DER format</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="public-key-text">
+                        <span>Public Key:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('public-key-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="public-key-text" placeholder="Enter public key (PEM or base64 DER format)..."></textarea>
+                    </div>
+                    <span class="info-text">Public key in PEM or base64 DER format</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="certificate-text">
+                        <span>Certificate (Optional):</span>
+                        <button class="copy-btn" onclick="copyToClipboard('certificate-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="certificate-text" placeholder="Enter certificate (PEM format, optional)..."></textarea>
+                    </div>
+                    <span class="info-text">Certificate in PEM format (optional)</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // CodeMirror editor instances
         let inputEditor, outputEditor, jsonInputEditor, jsonOutputEditor;
         let joltInputEditor, joltSchemaEditor, joltOutputEditor;
+        let privateKeyEditor, publicKeyEditor, certificateEditor;
 
         // Store content when switching tabs
-        let yamlJsonInput = '';
+        // Test data for all tabs
+        let yamlJsonInput = `name: John Doe
+age: 30
+city: New York
+hobbies:
+  - reading
+  - swimming
+  - coding
+active: true`;
         let yamlJsonOutput = '';
-        let jsonMinifyInput = '';
+        let jsonMinifyInput = `{
+  "name": "John Doe",
+  "age": 30,
+  "city": "New York",
+  "hobbies": ["reading", "swimming", "coding"],
+  "active": true
+}`;
         let jsonMinifyOutput = '';
-        let joltInput = '';
-        let joltSchema = '';
+        let joltInput = `{
+  "firstName": "John",
+  "lastName": "Doe",
+  "age": 30,
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "zip": "10001"
+  }
+}`;
+        let joltSchema = `[
+  {
+    "operation": "shift",
+    "spec": {
+      "firstName": "name.first",
+      "lastName": "name.last",
+      "age": "age",
+      "address.street": "location.street",
+      "address.city": "location.city",
+      "address.zip": "location.zipcode"
+    }
+  }
+]`;
         let joltOutput = '';
+        let privateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKj
+MzEfYyjiWA4R4/M2bN1F3V1Zq+0C4D5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+IDAQAB
+-----END PRIVATE KEY-----`;
+        let publicKey = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo
+4ljiWA4R4/M2bN1F3V1Zq+0C4D5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X
+IDAQAB
+-----END PUBLIC KEY-----`;
+        let certificate = `-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKL2
+-----END CERTIFICATE-----`;
 
         // Dark mode functionality
         function initDarkMode() {
@@ -729,6 +844,9 @@
             if (joltInputEditor) joltInputEditor.setOption('theme', theme);
             if (joltSchemaEditor) joltSchemaEditor.setOption('theme', theme);
             if (joltOutputEditor) joltOutputEditor.setOption('theme', theme);
+            if (privateKeyEditor) privateKeyEditor.setOption('theme', theme);
+            if (publicKeyEditor) publicKeyEditor.setOption('theme', theme);
+            if (certificateEditor) certificateEditor.setOption('theme', theme);
         }
 
         // Initialize CodeMirror editors
@@ -749,14 +867,16 @@
                 indentUnit: 2,
                 autofocus: false
             });
+            inputEditor.setValue(yamlJsonInput);
 
             outputEditor = CodeMirror.fromTextArea(outputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
                 theme: initialTheme,
                 lineWrapping: true,
-                readOnly: true
+                readOnly: false
             });
+            outputEditor.setValue(yamlJsonOutput);
 
             // JSON Minify tab editors
             const jsonInputTextarea = document.getElementById('json-input-text');
@@ -770,14 +890,16 @@
                 indentUnit: 2,
                 autofocus: false
             });
+            jsonInputEditor.setValue(jsonMinifyInput);
 
             jsonOutputEditor = CodeMirror.fromTextArea(jsonOutputTextarea, {
                 lineNumbers: true,
                 mode: 'javascript',
                 theme: initialTheme,
                 lineWrapping: true,
-                readOnly: true
+                readOnly: false
             });
+            jsonOutputEditor.setValue(jsonMinifyOutput);
 
             // JOLT Transform tab editors
             const joltInputTextarea = document.getElementById('jolt-input-text');
@@ -792,6 +914,7 @@
                 indentUnit: 2,
                 autofocus: false
             });
+            joltInputEditor.setValue(joltInput);
 
             joltSchemaEditor = CodeMirror.fromTextArea(joltSchemaTextarea, {
                 lineNumbers: true,
@@ -801,6 +924,7 @@
                 indentUnit: 2,
                 autofocus: false
             });
+            joltSchemaEditor.setValue(joltSchema);
 
             joltOutputEditor = CodeMirror.fromTextArea(joltOutputTextarea, {
                 lineNumbers: true,
@@ -809,6 +933,42 @@
                 lineWrapping: true,
                 readOnly: true
             });
+            joltOutputEditor.setValue(joltOutput);
+
+            // Key/Certificate Verification tab editors
+            const privateKeyTextarea = document.getElementById('private-key-text');
+            const publicKeyTextarea = document.getElementById('public-key-text');
+            const certificateTextarea = document.getElementById('certificate-text');
+            
+            privateKeyEditor = CodeMirror.fromTextArea(privateKeyTextarea, {
+                lineNumbers: true,
+                mode: 'text',
+                theme: initialTheme,
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+            privateKeyEditor.setValue(privateKey);
+
+            publicKeyEditor = CodeMirror.fromTextArea(publicKeyTextarea, {
+                lineNumbers: true,
+                mode: 'text',
+                theme: initialTheme,
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+            publicKeyEditor.setValue(publicKey);
+
+            certificateEditor = CodeMirror.fromTextArea(certificateTextarea, {
+                lineNumbers: true,
+                mode: 'text',
+                theme: initialTheme,
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+            certificateEditor.setValue(certificate);
 
             // Update mode when conversion type changes
             document.getElementById('conversion-type').addEventListener('change', function() {
@@ -883,6 +1043,12 @@
                 text = joltSchemaEditor.getValue();
             } else if (editorId === 'jolt-output-text') {
                 text = joltOutputEditor.getValue();
+            } else if (editorId === 'private-key-text') {
+                text = privateKeyEditor.getValue();
+            } else if (editorId === 'public-key-text') {
+                text = publicKeyEditor.getValue();
+            } else if (editorId === 'certificate-text') {
+                text = certificateEditor.getValue();
             }
 
             // Copy to clipboard
@@ -932,6 +1098,10 @@
                 joltInput = joltInputEditor.getValue();
                 joltSchema = joltSchemaEditor.getValue();
                 joltOutput = joltOutputEditor.getValue();
+            } else if (document.getElementById('key-verify-panel').classList.contains('active')) {
+                privateKey = privateKeyEditor.getValue();
+                publicKey = publicKeyEditor.getValue();
+                certificate = certificateEditor.getValue();
             }
 
             // Update tabs
@@ -964,6 +1134,16 @@
                 joltInputEditor.refresh();
                 joltSchemaEditor.refresh();
                 joltOutputEditor.refresh();
+            } else if (tabName === 'key-verify') {
+                document.querySelector('.tab:nth-child(4)').classList.add('active');
+                document.getElementById('key-verify-panel').classList.add('active');
+                // Restore content
+                privateKeyEditor.setValue(privateKey);
+                publicKeyEditor.setValue(publicKey);
+                certificateEditor.setValue(certificate);
+                privateKeyEditor.refresh();
+                publicKeyEditor.refresh();
+                certificateEditor.refresh();
             }
         }
 
@@ -1017,6 +1197,9 @@
             } else if (panel === 'jolt') {
                 errorDiv = document.getElementById('jolt-error-message');
                 successDiv = document.getElementById('jolt-success-message');
+            } else if (panel === 'key-verify') {
+                errorDiv = document.getElementById('key-verify-error-message');
+                successDiv = document.getElementById('key-verify-success-message');
             }
             
             if (errorDiv && successDiv) {
@@ -1037,6 +1220,9 @@
             } else if (panel === 'jolt') {
                 successDiv = document.getElementById('jolt-success-message');
                 errorDiv = document.getElementById('jolt-error-message');
+            } else if (panel === 'key-verify') {
+                successDiv = document.getElementById('key-verify-success-message');
+                errorDiv = document.getElementById('key-verify-error-message');
             }
             
             if (successDiv && errorDiv) {
@@ -1299,6 +1485,176 @@
                 }
                 joltOutputEditor.setValue('');
                 joltOutputEditor.refresh();
+            }
+        }
+
+        // Key/Certificate Verification API Configuration
+        const KEY_VERIFY_API_URL = 'https://4072a9hifa.execute-api.ap-south-1.amazonaws.com/Prod/key'; // Set your API Gateway URL here
+        const KEY_VERIFY_API_KEY = ''; // Add your API Gateway API key here if required
+
+        // Key/Certificate Verification function
+        async function verifyKeyCert() {
+            clearKeyVerifyMessages();
+            
+            const privateKeyText = privateKeyEditor.getValue();
+            const publicKeyText = publicKeyEditor.getValue();
+            const certificateText = certificateEditor.getValue();
+
+            if (!privateKeyText.trim()) {
+                showError('Please enter a private key.', 'key-verify');
+                return;
+            }
+
+            if (!publicKeyText.trim()) {
+                showError('Please enter a public key.', 'key-verify');
+                return;
+            }
+
+            // Check if API is configured
+            if (!KEY_VERIFY_API_URL) {
+                showError('Key verification API not configured. Please set KEY_VERIFY_API_URL in the code.', 'key-verify');
+                return;
+            }
+
+            try {
+                // Show loading state
+                showSuccess('Verifying keys...', 'key-verify');
+
+                // Prepare headers
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Add API key if configured
+                if (KEY_VERIFY_API_KEY) {
+                    headers['x-api-key'] = KEY_VERIFY_API_KEY;
+                }
+                
+                // Prepare request body
+                const requestBody = {
+                    privateKey: privateKeyText.trim(),
+                    publicKey: publicKeyText.trim()
+                };
+                
+                if (certificateText.trim()) {
+                    requestBody.certificate = certificateText.trim();
+                }
+                
+                // Call Lambda API
+                const response = await fetch(KEY_VERIFY_API_URL, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Handle API Gateway errors
+                    const errorMsg = result.message || result.error || `HTTP ${response.status}: ${response.statusText}`;
+                    showError('API Error: ' + errorMsg, 'key-verify');
+                    return;
+                }
+
+                // Check Lambda response
+                if (result.statusCode && result.statusCode !== 200) {
+                    const errorMsg = result.error || 'Verification failed';
+                    showError('Verification Error: ' + errorMsg, 'key-verify');
+                    return;
+                }
+
+                // Parse response
+                const verificationResult = result.body || result;
+                
+                // Build result message
+                let resultMessage = 'Verification Results:\n\n';
+                resultMessage += `Private/Public Key Pair: ${verificationResult.keyPairMatch ? '✅ MATCH' : '❌ NO MATCH'}\n`;
+                
+                if (certificateText.trim()) {
+                    resultMessage += `Certificate/Private Key Pair: ${verificationResult.certKeyMatch ? '✅ MATCH' : '❌ NO MATCH'}\n`;
+                }
+                
+                if (verificationResult.details) {
+                    resultMessage += '\nDetails:\n';
+                    if (verificationResult.details.keyType) {
+                        resultMessage += `  Key Type: ${verificationResult.details.keyType}\n`;
+                    }
+                    if (verificationResult.details.certificateInfo) {
+                        resultMessage += `  Certificate Subject: ${verificationResult.details.certificateInfo.subject || 'N/A'}\n`;
+                        resultMessage += `  Certificate Issuer: ${verificationResult.details.certificateInfo.issuer || 'N/A'}\n`;
+                    }
+                }
+                
+                if (verificationResult.keyPairMatch && (!certificateText.trim() || verificationResult.certKeyMatch)) {
+                    showSuccess(resultMessage, 'key-verify');
+                } else {
+                    showError(resultMessage, 'key-verify');
+                }
+                
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showError('Network error: Unable to reach API. Please check KEY_VERIFY_API_URL.', 'key-verify');
+                } else {
+                    showError('Verification error: ' + error.message, 'key-verify');
+                }
+            }
+        }
+
+        function clearKeyVerifyMessages() {
+            document.getElementById('key-verify-error-message').classList.remove('show');
+            document.getElementById('key-verify-success-message').classList.remove('show');
+        }
+
+        // Copy output to input function for reversible operations
+        function copyOutputToInput(tab) {
+            if (tab === 'yaml-json') {
+                const outputText = outputEditor.getValue();
+                if (!outputText.trim()) {
+                    showError('No output to copy. Please enter or convert content first.', 'yaml-json');
+                    return;
+                }
+                inputEditor.setValue(outputText);
+                inputEditor.refresh();
+                
+                // Toggle conversion type if needed
+                const conversionType = document.getElementById('conversion-type').value;
+                if (conversionType === 'yaml-to-json') {
+                    // If we converted YAML to JSON, switch to JSON to YAML
+                    document.getElementById('conversion-type').value = 'json-to-yaml';
+                    inputEditor.setOption('mode', 'javascript');
+                    outputEditor.setOption('mode', 'yaml');
+                    updateInfoText();
+                } else {
+                    // If we converted JSON to YAML, switch to YAML to JSON
+                    document.getElementById('conversion-type').value = 'yaml-to-json';
+                    inputEditor.setOption('mode', 'yaml');
+                    outputEditor.setOption('mode', 'javascript');
+                    updateInfoText();
+                }
+                
+                showSuccess('Output copied to input! Conversion type toggled. You can now convert again.', 'yaml-json');
+            } else if (tab === 'json') {
+                const outputText = jsonOutputEditor.getValue();
+                if (!outputText.trim()) {
+                    showError('No output to copy. Please enter or convert content first.', 'json');
+                    return;
+                }
+                jsonInputEditor.setValue(outputText);
+                jsonInputEditor.refresh();
+                
+                // Toggle operation if needed
+                const operation = document.getElementById('json-operation').value;
+                if (operation === 'minify') {
+                    // If we minified, switch to unminify
+                    document.getElementById('json-operation').value = 'unminify';
+                    updateJsonInfoText();
+                } else {
+                    // If we unminified, switch to minify
+                    document.getElementById('json-operation').value = 'minify';
+                    updateJsonInfoText();
+                }
+                
+                showSuccess('Output copied to input! Operation toggled. You can now convert again.', 'json');
             }
         }
 
