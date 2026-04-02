@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/lib/codemirror.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/javascript/javascript.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/yaml/yaml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.15/mode/clike/clike.js"></script>
     <style>
         * {
             margin: 0;
@@ -525,6 +526,7 @@
             <button class="tab" onclick="switchTab('json-minify')">JSON Minify/Unminify</button>
             <button class="tab" onclick="switchTab('jolt-transform')">JOLT Transform</button>
             <button class="tab" onclick="switchTab('key-verify')">Key/Cert Verify</button>
+            <button class="tab" onclick="switchTab('drools-test')">Drools Test</button>
         </div>
 
         <!-- YAML/JSON Escaped Tab -->
@@ -732,6 +734,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- Drools Test Tab -->
+        <div id="drools-test-panel" class="tab-panel">
+            <div class="controls">
+                <button class="convert-btn" id="drools-run-btn" onclick="runDrools()">Run Rules</button>
+            </div>
+
+            <div class="error-message" id="drools-error-message"></div>
+            <div class="success-message" id="drools-success-message"></div>
+
+            <div class="textboxes jolt-textboxes">
+                <div class="textbox-group">
+                    <label class="textbox-label" for="drools-input-text">
+                        <span>Input Facts (JSON):</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="copy-btn" onclick="formatJson('drools-input-text')" title="Format JSON">
+                                ✨ Format
+                            </button>
+                            <button class="copy-btn" onclick="copyToClipboard('drools-input-text', this)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="drools-input-text" placeholder="Enter input facts as JSON array..."></textarea>
+                    </div>
+                    <span class="info-text">Array of typed facts — each fact is inserted as a Map with a "_type" field added automatically</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="drools-rules-text">
+                        <span>Drools DRL Rules:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('drools-rules-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="drools-rules-text" placeholder="Enter Drools DRL rules here..."></textarea>
+                    </div>
+                    <span class="info-text">Drools DRL — import java.util.Map; match facts with Map(this["_type"] == "TypeName", ...)</span>
+                </div>
+                <div class="textbox-group">
+                    <label class="textbox-label" for="drools-output-text">
+                        <span>Output:</span>
+                        <button class="copy-btn" onclick="copyToClipboard('drools-output-text', this)" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </label>
+                    <div class="editor-wrapper">
+                        <textarea id="drools-output-text" placeholder="Rule execution output will appear here..." readonly></textarea>
+                    </div>
+                    <span class="info-text">Fired rules and modified facts</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -739,6 +795,7 @@
         let inputEditor, outputEditor, jsonInputEditor, jsonOutputEditor;
         let joltInputEditor, joltSchemaEditor, joltOutputEditor;
         let privateKeyEditor, publicKeyEditor, certificateEditor;
+        let droolsInputEditor, droolsRulesEditor, droolsOutputEditor;
 
         // Store content when switching tabs
         // Test data for all tabs
@@ -802,6 +859,46 @@ IDAQAB
         let certificate = `-----BEGIN CERTIFICATE-----
 MIIDXTCCAkWgAwIBAgIJAKL2
 -----END CERTIFICATE-----`;
+        let droolsInput = `[
+  {
+    "type": "com.example.Person",
+    "data": {
+      "name": "Alice",
+      "age": 17,
+      "status": ""
+    }
+  },
+  {
+    "type": "com.example.Person",
+    "data": {
+      "name": "Bob",
+      "age": 25,
+      "status": ""
+    }
+  }
+]`;
+        let droolsRules = `package com.example;
+import java.util.Map;
+
+// Facts are plain Maps. Each fact gets a "_type" field automatically.
+// Match by type: Map(this["_type"] == "Person", ...)
+// Modify fields: $p.put("field", value);
+// Use update($p) only when other rules depend on the modified value.
+
+rule "Minor Check"
+when
+    $p : Map( this["_type"] == "Person", (Integer)this["age"] < 18 )
+then
+    $p.put("status", "minor");
+end
+
+rule "Adult Check"
+when
+    $p : Map( this["_type"] == "Person", (Integer)this["age"] >= 18 )
+then
+    $p.put("status", "adult");
+end`;
+        let droolsOutput = '';
 
         // Dark mode functionality
         function initDarkMode() {
@@ -847,6 +944,9 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             if (privateKeyEditor) privateKeyEditor.setOption('theme', theme);
             if (publicKeyEditor) publicKeyEditor.setOption('theme', theme);
             if (certificateEditor) certificateEditor.setOption('theme', theme);
+            if (droolsInputEditor) droolsInputEditor.setOption('theme', theme);
+            if (droolsRulesEditor) droolsRulesEditor.setOption('theme', theme);
+            if (droolsOutputEditor) droolsOutputEditor.setOption('theme', theme);
         }
 
         // Initialize CodeMirror editors
@@ -970,6 +1070,49 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             });
             certificateEditor.setValue(certificate);
 
+            // Drools Test tab editors
+            const droolsInputTextarea = document.getElementById('drools-input-text');
+            const droolsRulesTextarea = document.getElementById('drools-rules-text');
+            const droolsOutputTextarea = document.getElementById('drools-output-text');
+
+            droolsInputEditor = CodeMirror.fromTextArea(droolsInputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: initialTheme,
+                lineWrapping: true,
+                indentUnit: 2,
+                autofocus: false
+            });
+            droolsInputEditor.setValue(droolsInput);
+
+            droolsRulesEditor = CodeMirror.fromTextArea(droolsRulesTextarea, {
+                lineNumbers: true,
+                mode: 'text/x-java',
+                theme: initialTheme,
+                lineWrapping: true,
+                indentUnit: 4,
+                autofocus: false
+            });
+            droolsRulesEditor.setValue(droolsRules);
+
+            droolsOutputEditor = CodeMirror.fromTextArea(droolsOutputTextarea, {
+                lineNumbers: true,
+                mode: 'javascript',
+                theme: initialTheme,
+                lineWrapping: true,
+                readOnly: true
+            });
+            droolsOutputEditor.setValue(droolsOutput);
+
+            droolsInputEditor.setOption('extraKeys', {
+                'Ctrl-Enter': function() { runDrools(); },
+                'Cmd-Enter': function() { runDrools(); }
+            });
+            droolsRulesEditor.setOption('extraKeys', {
+                'Ctrl-Enter': function() { runDrools(); },
+                'Cmd-Enter': function() { runDrools(); }
+            });
+
             // Update mode when conversion type changes
             document.getElementById('conversion-type').addEventListener('change', function() {
                 const conversionType = this.value;
@@ -1006,6 +1149,9 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             } else if (editorId === 'jolt-schema-text') {
                 editor = joltSchemaEditor;
                 text = joltSchemaEditor.getValue();
+            } else if (editorId === 'drools-input-text') {
+                editor = droolsInputEditor;
+                text = droolsInputEditor.getValue();
             } else {
                 return;
             }
@@ -1049,6 +1195,12 @@ MIIDXTCCAkWgAwIBAgIJAKL2
                 text = publicKeyEditor.getValue();
             } else if (editorId === 'certificate-text') {
                 text = certificateEditor.getValue();
+            } else if (editorId === 'drools-input-text') {
+                text = droolsInputEditor.getValue();
+            } else if (editorId === 'drools-rules-text') {
+                text = droolsRulesEditor.getValue();
+            } else if (editorId === 'drools-output-text') {
+                text = droolsOutputEditor.getValue();
             }
 
             // Copy to clipboard
@@ -1102,6 +1254,10 @@ MIIDXTCCAkWgAwIBAgIJAKL2
                 privateKey = privateKeyEditor.getValue();
                 publicKey = publicKeyEditor.getValue();
                 certificate = certificateEditor.getValue();
+            } else if (document.getElementById('drools-test-panel').classList.contains('active')) {
+                droolsInput = droolsInputEditor.getValue();
+                droolsRules = droolsRulesEditor.getValue();
+                droolsOutput = droolsOutputEditor.getValue();
             }
 
             // Update tabs
@@ -1144,6 +1300,16 @@ MIIDXTCCAkWgAwIBAgIJAKL2
                 privateKeyEditor.refresh();
                 publicKeyEditor.refresh();
                 certificateEditor.refresh();
+            } else if (tabName === 'drools-test') {
+                document.querySelector('.tab:nth-child(5)').classList.add('active');
+                document.getElementById('drools-test-panel').classList.add('active');
+                // Restore content
+                droolsInputEditor.setValue(droolsInput);
+                droolsRulesEditor.setValue(droolsRules);
+                droolsOutputEditor.setValue(droolsOutput);
+                droolsInputEditor.refresh();
+                droolsRulesEditor.refresh();
+                droolsOutputEditor.refresh();
             }
         }
 
@@ -1200,8 +1366,11 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             } else if (panel === 'key-verify') {
                 errorDiv = document.getElementById('key-verify-error-message');
                 successDiv = document.getElementById('key-verify-success-message');
+            } else if (panel === 'drools') {
+                errorDiv = document.getElementById('drools-error-message');
+                successDiv = document.getElementById('drools-success-message');
             }
-            
+
             if (errorDiv && successDiv) {
                 errorDiv.textContent = message;
                 errorDiv.classList.add('show');
@@ -1223,8 +1392,11 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             } else if (panel === 'key-verify') {
                 successDiv = document.getElementById('key-verify-success-message');
                 errorDiv = document.getElementById('key-verify-error-message');
+            } else if (panel === 'drools') {
+                successDiv = document.getElementById('drools-success-message');
+                errorDiv = document.getElementById('drools-error-message');
             }
-            
+
             if (successDiv && errorDiv) {
                 successDiv.textContent = message;
                 successDiv.classList.add('show');
@@ -1488,6 +1660,99 @@ MIIDXTCCAkWgAwIBAgIJAKL2
             }
         }
 
+        // Drools API Configuration
+        const DROOLS_API_URL = 'https://4072a9hifa.execute-api.ap-south-1.amazonaws.com/Prod/drools';
+        const DROOLS_API_KEY = ''; // Add your API Gateway API key here if required
+
+        // Drools rule execution function
+        async function runDrools() {
+            clearDroolsMessages();
+
+            const inputJson = droolsInputEditor.getValue();
+            const rulesText = droolsRulesEditor.getValue();
+
+            if (!inputJson.trim()) {
+                showError('Please enter input facts JSON.', 'drools');
+                return;
+            }
+
+            if (!rulesText.trim()) {
+                showError('Please enter Drools DRL rules.', 'drools');
+                return;
+            }
+
+            if (!DROOLS_API_URL) {
+                showError('Drools API not configured. Please set DROOLS_API_URL in the code.', 'drools');
+                return;
+            }
+
+            try {
+                // Parse input JSON to validate
+                const inputData = JSON.parse(inputJson);
+
+                // Show loading state
+                droolsOutputEditor.setValue('Running rules...');
+                droolsOutputEditor.refresh();
+
+                // Prepare headers
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (DROOLS_API_KEY) {
+                    headers['x-api-key'] = DROOLS_API_KEY;
+                }
+
+                // Call Lambda API
+                const response = await fetch(DROOLS_API_URL, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        inputJson: inputData,
+                        droolsRules: rulesText
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = result.message || result.error || `HTTP ${response.status}: ${response.statusText}`;
+                    showError('API Error: ' + errorMsg, 'drools');
+                    droolsOutputEditor.setValue('');
+                    droolsOutputEditor.refresh();
+                    return;
+                }
+
+                // Check Lambda response
+                if (result.statusCode && result.statusCode !== 200) {
+                    const errorMsg = result.error || 'Rule execution failed';
+                    showError('Drools Error: ' + errorMsg, 'drools');
+                    droolsOutputEditor.setValue('');
+                    droolsOutputEditor.refresh();
+                    return;
+                }
+
+                // Success - format and display result
+                const outputData = result.body || result;
+                const formattedResult = JSON.stringify(outputData, null, 2);
+                droolsOutputEditor.setValue(formattedResult);
+                droolsOutputEditor.refresh();
+                const ruleCount = outputData.firedRules ? outputData.firedRules.length : 0;
+                showSuccess(`Rules executed successfully. ${ruleCount} rule(s) fired.`, 'drools');
+
+            } catch (error) {
+                if (error.message.includes('JSON') || error.name === 'SyntaxError') {
+                    showError('Invalid input facts JSON: ' + error.message, 'drools');
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showError('Network error: Unable to reach Drools API.', 'drools');
+                } else {
+                    showError('Error: ' + error.message, 'drools');
+                }
+                droolsOutputEditor.setValue('');
+                droolsOutputEditor.refresh();
+            }
+        }
+
         // Key/Certificate Verification API Configuration
         const KEY_VERIFY_API_URL = 'https://4072a9hifa.execute-api.ap-south-1.amazonaws.com/Prod/key'; // Set your API Gateway URL here
         const KEY_VERIFY_API_KEY = ''; // Add your API Gateway API key here if required
@@ -1603,6 +1868,11 @@ MIIDXTCCAkWgAwIBAgIJAKL2
         function clearKeyVerifyMessages() {
             document.getElementById('key-verify-error-message').classList.remove('show');
             document.getElementById('key-verify-success-message').classList.remove('show');
+        }
+
+        function clearDroolsMessages() {
+            document.getElementById('drools-error-message').classList.remove('show');
+            document.getElementById('drools-success-message').classList.remove('show');
         }
 
         // Copy output to input function for reversible operations
