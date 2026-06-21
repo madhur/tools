@@ -949,6 +949,30 @@ end`;
             if (droolsOutputEditor) droolsOutputEditor.setOption('theme', theme);
         }
 
+        // Pane content persistence (left/input panes only)
+        const PANE_STORAGE_PREFIX = 'paneContent:';
+
+        // Return saved value for a key, or the provided default if absent / storage unavailable.
+        function loadPane(key, defaultValue) {
+            try {
+                const saved = localStorage.getItem(PANE_STORAGE_PREFIX + key);
+                return saved !== null ? saved : defaultValue;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+
+        // Debounced save so we don't write on every keystroke.
+        const paneSaveTimers = {};
+        function savePane(key, value) {
+            clearTimeout(paneSaveTimers[key]);
+            paneSaveTimers[key] = setTimeout(() => {
+                try {
+                    localStorage.setItem(PANE_STORAGE_PREFIX + key, value);
+                } catch (e) { /* quota / private mode — ignore, tool still works */ }
+            }, 400);
+        }
+
         // Initialize CodeMirror editors
         function initEditors() {
             // Get initial theme from localStorage
@@ -967,6 +991,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            yamlJsonInput = loadPane('yamlJsonInput', yamlJsonInput);
             inputEditor.setValue(yamlJsonInput);
 
             outputEditor = CodeMirror.fromTextArea(outputTextarea, {
@@ -990,6 +1015,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            jsonMinifyInput = loadPane('jsonMinifyInput', jsonMinifyInput);
             jsonInputEditor.setValue(jsonMinifyInput);
 
             jsonOutputEditor = CodeMirror.fromTextArea(jsonOutputTextarea, {
@@ -1014,6 +1040,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            joltInput = loadPane('joltInput', joltInput);
             joltInputEditor.setValue(joltInput);
 
             joltSchemaEditor = CodeMirror.fromTextArea(joltSchemaTextarea, {
@@ -1024,6 +1051,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            joltSchema = loadPane('joltSchema', joltSchema);
             joltSchemaEditor.setValue(joltSchema);
 
             joltOutputEditor = CodeMirror.fromTextArea(joltOutputTextarea, {
@@ -1048,6 +1076,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            privateKey = loadPane('privateKey', privateKey);
             privateKeyEditor.setValue(privateKey);
 
             publicKeyEditor = CodeMirror.fromTextArea(publicKeyTextarea, {
@@ -1058,6 +1087,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            publicKey = loadPane('publicKey', publicKey);
             publicKeyEditor.setValue(publicKey);
 
             certificateEditor = CodeMirror.fromTextArea(certificateTextarea, {
@@ -1068,6 +1098,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            certificate = loadPane('certificate', certificate);
             certificateEditor.setValue(certificate);
 
             // Drools Test tab editors
@@ -1083,6 +1114,7 @@ end`;
                 indentUnit: 2,
                 autofocus: false
             });
+            droolsInput = loadPane('droolsInput', droolsInput);
             droolsInputEditor.setValue(droolsInput);
 
             droolsRulesEditor = CodeMirror.fromTextArea(droolsRulesTextarea, {
@@ -1093,6 +1125,7 @@ end`;
                 indentUnit: 4,
                 autofocus: false
             });
+            droolsRules = loadPane('droolsRules', droolsRules);
             droolsRulesEditor.setValue(droolsRules);
 
             droolsOutputEditor = CodeMirror.fromTextArea(droolsOutputTextarea, {
@@ -1103,6 +1136,22 @@ end`;
                 readOnly: true
             });
             droolsOutputEditor.setValue(droolsOutput);
+
+            // Persist left/input pane contents to localStorage on every edit (debounced).
+            // Registered after init so the setValue calls above don't trigger redundant writes.
+            [
+                [inputEditor,       'yamlJsonInput'],
+                [jsonInputEditor,   'jsonMinifyInput'],
+                [joltInputEditor,   'joltInput'],
+                [joltSchemaEditor,  'joltSchema'],
+                [privateKeyEditor,  'privateKey'],
+                [publicKeyEditor,   'publicKey'],
+                [certificateEditor, 'certificate'],
+                [droolsInputEditor, 'droolsInput'],
+                [droolsRulesEditor, 'droolsRules'],
+            ].forEach(([editor, key]) => {
+                editor.on('change', () => savePane(key, editor.getValue()));
+            });
 
             droolsInputEditor.setOption('extraKeys', {
                 'Ctrl-Enter': function() { runDrools(); },
