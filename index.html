@@ -929,6 +929,13 @@
 
         <div id="timezone-panel" class="tab-panel">
             <div class="tz-controls">
+                <div class="tz-add-wrap">
+                    <button class="tz-btn secondary" id="tz-add-btn" onclick="tzToggleAddPopover()">+ Add zone</button>
+                    <div class="tz-add-popover" id="tz-add-popover">
+                        <input class="tz-add-search" id="tz-add-search" type="text" placeholder="Search city or zone… e.g. London, CET" oninput="tzRenderAddResults()">
+                        <div class="tz-add-results" id="tz-add-results"></div>
+                    </div>
+                </div>
                 <button class="tz-btn primary" onclick="tzGoToNow()">⦿ Now</button>
                 <div class="tz-live-pill">
                     <span class="tz-live-dot" id="tz-live-dot"></span>
@@ -1490,6 +1497,7 @@ end`;
                 <div class="tz-card-head">
                     <span class="tz-card-title">${zone.name}</span>
                     <span class="tz-card-sub" data-role="sub"></span>
+                    <button class="tz-card-remove" title="Remove zone" onclick="tzRemoveZone('${zone.id}')">✕</button>
                 </div>
                 <div class="tz-face" data-role="face">
                     ${ticks.join('')}
@@ -1684,9 +1692,64 @@ end`;
             tzRenderAll();
         }
 
+        function tzLoadZones() {
+            const raw = loadPane('timezoneZones', null);
+            if (raw) {
+                try {
+                    const ids = JSON.parse(raw);
+                    if (Array.isArray(ids) && ids.length > 0) {
+                        return ids.map((tzId, i) => ({ tz: tzId, name: tzPrettyName(tzId), id: 'z' + i }));
+                    }
+                } catch (e) { /* malformed storage — fall back to defaults */ }
+            }
+            return tzDefaultZones();
+        }
+
+        function tzSaveZones() {
+            savePane('timezoneZones', JSON.stringify(tzZones.map(z => z.tz)));
+        }
+
+        function tzToggleAddPopover() {
+            const pop = document.getElementById('tz-add-popover');
+            pop.classList.toggle('open');
+            if (pop.classList.contains('open')) {
+                document.getElementById('tz-add-search').value = '';
+                document.getElementById('tz-add-search').focus();
+                tzRenderAddResults();
+            }
+        }
+
+        function tzRenderAddResults() {
+            const q = document.getElementById('tz-add-search').value.trim().toLowerCase();
+            const results = tzAllZoneNames
+                .filter(tz => tz.toLowerCase().replace(/_/g, ' ').includes(q))
+                .slice(0, 8);
+            const box = document.getElementById('tz-add-results');
+            box.innerHTML = results.map(tz => {
+                const label = TzUtils.zoneShortLabel(tz, tzSharedInstant);
+                const pretty = tzPrettyName(tz);
+                return `<button class="tz-add-result" onclick="tzAddZone('${tz}', '${pretty.replace(/'/g, "\\'")}')"><span>${pretty}</span><span class="off">${label}</span></button>`;
+            }).join('') || `<div style="padding:8px; color:#999; font-size:0.85em;">No matches</div>`;
+        }
+
+        function tzAddZone(tz, prettyName) {
+            tzZones.push({ tz, name: prettyName, id: 'z' + (tzNextId++) });
+            document.getElementById('tz-add-popover').classList.remove('open');
+            tzSaveZones();
+            tzRebuildGrid();
+        }
+
+        function tzRemoveZone(id) {
+            if (tzZones.length <= 1) return;
+            tzZones = tzZones.filter(z => z.id !== id);
+            tzSaveZones();
+            tzRebuildGrid();
+        }
+
         function tzInit() {
             tzGridEl = document.getElementById('tz-grid');
-            tzZones = tzDefaultZones();
+            try { tzAllZoneNames = Intl.supportedValuesOf('timeZone'); } catch (e) { tzAllZoneNames = ['UTC']; }
+            tzZones = tzLoadZones();
             tzNextId = tzZones.length;
             tzRebuildGrid();
             setInterval(() => {
@@ -1695,6 +1758,12 @@ end`;
                     tzRenderAll();
                 }
             }, 1000);
+            document.addEventListener('click', (e) => {
+                const wrap = document.querySelector('.tz-add-wrap');
+                if (wrap && !wrap.contains(e.target)) {
+                    document.getElementById('tz-add-popover').classList.remove('open');
+                }
+            });
         }
 
         function switchTab(tabName) {
