@@ -1077,6 +1077,7 @@ end`;
             localStorage.setItem('darkMode', isDarkMode);
             updateDarkModeButton(isDarkMode);
             updateCodeMirrorThemes(isDarkMode ? 'material' : 'default');
+            tzRenderAll();
         }
 
         function updateDarkModeButton(isDarkMode) {
