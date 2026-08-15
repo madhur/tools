@@ -508,6 +508,143 @@
                 margin-bottom: 15px;
             }
         }
+
+        /* ---- Time Zone Converter tab ---- */
+        .tz-controls {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;
+        }
+        .tz-btn {
+            padding: 10px 18px; border-radius: 8px; font-size: 0.92em; font-weight: 600;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: none;
+        }
+        .tz-btn:focus-visible { outline: 3px solid rgba(102,126,234,0.5); outline-offset: 2px; }
+        .tz-btn.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .tz-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(102,126,234,0.3); }
+        .tz-btn.secondary { background: transparent; color: #667eea; border: 2px solid #667eea; }
+        .tz-btn.secondary:hover { background: rgba(102,126,234,0.08); }
+        body.dark-mode .tz-btn.secondary { color: #8c9eff; border-color: #8c9eff; }
+        body.dark-mode .tz-btn.secondary:hover { background: rgba(140,158,255,0.1); }
+
+        .tz-live-pill { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #666; margin-left: auto; }
+        body.dark-mode .tz-live-pill { color: #b0b0b0; }
+        .tz-live-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #3cb371;
+            box-shadow: 0 0 0 0 rgba(60,179,113,0.6); animation: tz-pulse 2s infinite;
+        }
+        .tz-live-dot.frozen { background: #999; animation: none; }
+        @keyframes tz-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(60,179,113,0.5); }
+            70% { box-shadow: 0 0 0 6px rgba(60,179,113,0); }
+            100% { box-shadow: 0 0 0 0 rgba(60,179,113,0); }
+        }
+        @media (prefers-reduced-motion: reduce) { .tz-live-dot { animation: none; } }
+
+        .tz-add-wrap { position: relative; }
+        .tz-add-popover {
+            position: absolute; top: calc(100% + 8px); left: 0; z-index: 50;
+            background: white; border: 2px solid #e0e0e0; border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            width: 300px; padding: 10px; max-height: 320px; overflow: hidden; display: none; flex-direction: column;
+        }
+        .tz-add-popover.open { display: flex; }
+        body.dark-mode .tz-add-popover { background: #2a2a3e; border-color: #3a3a4e; }
+        .tz-add-search {
+            padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95em;
+            outline: none; margin-bottom: 8px;
+        }
+        .tz-add-search:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        body.dark-mode .tz-add-search { background: #1e1e2e; color: #e0e0e0; border-color: #3a3a4e; }
+        .tz-add-results { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+        .tz-add-result {
+            text-align: left; padding: 8px 10px; border-radius: 6px; border: none; background: transparent;
+            cursor: pointer; font-size: 0.9em; color: #333; display: flex; justify-content: space-between; gap: 8px; width: 100%;
+        }
+        .tz-add-result:hover, .tz-add-result:focus-visible { background: rgba(102,126,234,0.1); outline: none; }
+        .tz-add-result .off { color: #888; font-size: 0.85em; white-space: nowrap; }
+        body.dark-mode .tz-add-result { color: #e0e0e0; }
+        body.dark-mode .tz-add-result:hover { background: rgba(102,126,234,0.18); }
+
+        .tz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+
+        .tz-card {
+            border: 2px solid #e0e0e0; border-radius: 14px; padding: 18px 16px 16px;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            transition: border-color 0.2s;
+        }
+        body.dark-mode .tz-card { border-color: #3a3a4e; }
+
+        .tz-card-head { display: flex; align-items: baseline; gap: 8px; width: 100%; justify-content: center; position: relative; }
+        .tz-card-title { font-weight: 700; font-size: 1.05em; color: #333; letter-spacing: 0.02em; }
+        body.dark-mode .tz-card-title { color: #e0e0e0; }
+        .tz-card-sub { font-size: 0.78em; color: #888; }
+        .tz-card-remove {
+            position: absolute; right: 0; top: 2px; border: none; background: transparent; color: #bbb;
+            cursor: pointer; font-size: 1em; line-height: 1; padding: 2px 4px; border-radius: 4px;
+        }
+        .tz-card-remove:hover { color: #d33; background: rgba(211,51,51,0.08); }
+        .tz-card-remove:focus-visible { outline: 2px solid #d33; }
+
+        .tz-face {
+            width: 184px; height: 184px; border-radius: 50%; position: relative;
+            border: 3px solid #fff; box-shadow: 0 0 0 2px #e0e0e0, inset 0 0 14px rgba(0,0,0,0.06);
+            touch-action: none; cursor: grab; transition: background 0.25s ease;
+        }
+        body.dark-mode .tz-face { border-color: #1e1e2e; box-shadow: 0 0 0 2px #3a3a4e, inset 0 0 14px rgba(0,0,0,0.35); }
+        .tz-face:active { cursor: grabbing; }
+
+        .tz-tick { position: absolute; left: 50%; top: 50%; width: 1px; height: 5px; background: rgba(0,0,0,0.22); transform-origin: 50% 0; margin-left: -0.5px; }
+        .tz-tick.major { height: 9px; width: 2px; background: rgba(0,0,0,0.4); margin-left: -1px; }
+        body.dark-mode .tz-tick { background: rgba(255,255,255,0.3); }
+        body.dark-mode .tz-tick.major { background: rgba(255,255,255,0.55); }
+
+        .tz-label { position: absolute; font-size: 0.72em; font-weight: 700; color: #555; transform: translate(-50%, -50%); pointer-events: none; font-variant-numeric: tabular-nums; }
+        body.dark-mode .tz-label { color: #cfcfe6; }
+
+        .tz-hand { position: absolute; left: 50%; top: 50%; transform-origin: 50% 100%; border-radius: 3px; }
+        .tz-hand.hour { width: 5px; height: 50px; margin-left: -2.5px; margin-top: -50px; background: #333; cursor: grab; }
+        .tz-hand.minute { width: 3px; height: 74px; margin-left: -1.5px; margin-top: -74px; background: #667eea; cursor: grab; }
+        body.dark-mode .tz-hand.hour { background: #e8e8f5; }
+        .tz-hand:active { cursor: grabbing; }
+
+        .tz-center-dot {
+            position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; margin-left: -4.5px; margin-top: -4.5px;
+            border-radius: 50%; background: #764ba2; box-shadow: 0 0 0 2px white; z-index: 5; pointer-events: none;
+        }
+        body.dark-mode .tz-center-dot { box-shadow: 0 0 0 2px #1e1e2e; }
+
+        .tz-readout { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+        .tz-time-row { display: flex; align-items: center; gap: 6px; }
+        .tz-time-input {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 1.3em; font-weight: 700;
+            color: #333; border: none; background: transparent; text-align: center; width: 3.4em;
+            font-variant-numeric: tabular-nums; border-radius: 6px; padding: 2px 4px;
+        }
+        .tz-time-input:focus { outline: none; background: rgba(102,126,234,0.1); }
+        body.dark-mode .tz-time-input { color: #e0e0e0; }
+
+        .tz-ampm-pill {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.72em; font-weight: 700;
+            letter-spacing: 0.03em; padding: 4px 8px; border-radius: 20px; border: 2px solid #667eea;
+            background: transparent; color: #667eea; cursor: pointer; transition: background 0.2s;
+        }
+        .tz-ampm-pill:hover { background: rgba(102,126,234,0.1); }
+        .tz-ampm-pill:focus-visible { outline: 2px solid #667eea; outline-offset: 2px; }
+        body.dark-mode .tz-ampm-pill { color: #8c9eff; border-color: #8c9eff; }
+        body.dark-mode .tz-ampm-pill:hover { background: rgba(140,158,255,0.12); }
+        .tz-date-input {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.78em; color: #777;
+            border: none; background: transparent; text-align: center; border-radius: 6px; padding: 2px 4px;
+            color-scheme: light;
+        }
+        body.dark-mode .tz-date-input { color-scheme: dark; color: #a0a0c0; }
+        .tz-date-input:focus { outline: none; background: rgba(102,126,234,0.1); }
+        .tz-weekday { font-size: 0.78em; color: #888; letter-spacing: 0.04em; text-transform: uppercase; }
+        body.dark-mode .tz-weekday { color: #9090b0; }
+
+        @media (max-width: 560px) {
+            .tz-controls { justify-content: center; }
+            .tz-live-pill { margin-left: 0; width: 100%; justify-content: center; }
+            .tz-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -527,6 +664,7 @@
             <button class="tab" onclick="switchTab('jolt-transform')">JOLT Transform</button>
             <button class="tab" onclick="switchTab('key-verify')">Key/Cert Verify</button>
             <button class="tab" onclick="switchTab('drools-test')">Drools Test</button>
+            <button class="tab" onclick="switchTab('timezone')">Time Zone Converter</button>
         </div>
 
         <!-- YAML/JSON Escaped Tab -->
@@ -788,8 +926,21 @@
                 </div>
             </div>
         </div>
+
+        <div id="timezone-panel" class="tab-panel">
+            <div class="tz-controls">
+                <button class="tz-btn primary" onclick="tzGoToNow()">⦿ Now</button>
+                <div class="tz-live-pill">
+                    <span class="tz-live-dot" id="tz-live-dot"></span>
+                    <span id="tz-live-label">Live</span>
+                </div>
+            </div>
+
+            <div class="tz-grid" id="tz-grid"></div>
+        </div>
     </div>
 
+    <script src="tz-utils.js"></script>
     <script>
         // CodeMirror editor instances
         let inputEditor, outputEditor, jsonInputEditor, jsonOutputEditor;
@@ -1287,6 +1438,264 @@ end`;
         }
 
         // Tab switching functionality
+        // ---------------- Time Zone Converter ----------------
+        const TZ_DEFAULT_ZONE_IDS = ['Asia/Kolkata', 'America/New_York', 'America/Los_Angeles', 'UTC'];
+        const TZ_FRIENDLY_NAMES = {
+            'Asia/Kolkata': 'IST',
+            'America/New_York': 'Eastern',
+            'America/Los_Angeles': 'Pacific',
+            'UTC': 'UTC',
+        };
+
+        let tzZones = [];
+        let tzNextId = 0;
+        let tzSharedInstant = new Date();
+        let tzFrozen = false;
+        let tzDrag = null; // { zoneId, hand: 'hour'|'minute', faceEl, period, cumulative, lastAngle }
+        let tzGridEl = null;
+        let tzAllZoneNames = [];
+
+        function tzPrettyName(tzId) {
+            if (TZ_FRIENDLY_NAMES[tzId]) return TZ_FRIENDLY_NAMES[tzId];
+            return tzId.replace(/_/g, ' ').split('/').pop();
+        }
+
+        function tzDefaultZones() {
+            return TZ_DEFAULT_ZONE_IDS.map((tzId, i) => ({ tz: tzId, name: tzPrettyName(tzId), id: 'z' + i }));
+        }
+
+        function tzBuildCardSkeleton(zone) {
+            const card = document.createElement('div');
+            card.className = 'tz-card';
+            card.dataset.id = zone.id;
+
+            // 60 minute ticks (every 5th one taller), matching a familiar analog face.
+            const ticks = [];
+            for (let m = 0; m < 60; m++) {
+                const angle = (m / 60) * 360;
+                const major = m % 5 === 0;
+                ticks.push(`<div class="tz-tick${major ? ' major' : ''}" style="transform: rotate(${angle}deg);"></div>`);
+            }
+            // Hour numerals 1-12 at their usual clock-face positions.
+            const hourLabels = Array.from({ length: 12 }, (_, i) => i + 1).map(hr => {
+                const angle = ((hr % 12) / 12) * 360;
+                const rad = (angle - 90) * Math.PI / 180;
+                const r = 76, c = 92;
+                const x = c + r * Math.cos(rad);
+                const y = c + r * Math.sin(rad);
+                return `<div class="tz-label" style="left:${x}px; top:${y}px;">${hr}</div>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="tz-card-head">
+                    <span class="tz-card-title">${zone.name}</span>
+                    <span class="tz-card-sub" data-role="sub"></span>
+                </div>
+                <div class="tz-face" data-role="face">
+                    ${ticks.join('')}
+                    ${hourLabels}
+                    <div class="tz-hand hour" data-role="hourhand"></div>
+                    <div class="tz-hand minute" data-role="minhand"></div>
+                    <div class="tz-center-dot"></div>
+                </div>
+                <div class="tz-readout">
+                    <div class="tz-time-row">
+                        <input class="tz-time-input" data-role="time" type="text" value="12:00" maxlength="5" aria-label="${zone.name} time">
+                        <button class="tz-ampm-pill" type="button" data-role="ampm" onclick="tzTogglePeriod('${zone.id}')" title="Toggle AM/PM">AM</button>
+                    </div>
+                    <input class="tz-date-input" data-role="date" type="date" aria-label="${zone.name} date">
+                    <div class="tz-weekday" data-role="weekday"></div>
+                </div>
+            `;
+            return card;
+        }
+
+        function tzRebuildGrid() {
+            tzGridEl.innerHTML = '';
+            tzZones.forEach(zone => {
+                const card = tzBuildCardSkeleton(zone);
+                tzGridEl.appendChild(card);
+
+                const face = card.querySelector('[data-role="face"]');
+                face.addEventListener('pointerdown', e => tzStartDrag(e, zone.id, face));
+
+                const timeInput = card.querySelector('[data-role="time"]');
+                timeInput.addEventListener('change', () => tzApplyManualEdit(zone.id));
+                const dateInput = card.querySelector('[data-role="date"]');
+                dateInput.addEventListener('change', () => tzApplyManualEdit(zone.id));
+            });
+            tzRenderAll();
+        }
+
+        // Whole-face tint standing in for day/night, since a 12h face repeats twice a day
+        // and can't show it as a fixed split the way a 24h dial could.
+        function tzFaceTint(dark, hour24) {
+            const isDay = hour24 >= 6 && hour24 < 18;
+            if (dark) return isDay ? '#33335a' : '#111124';
+            return isDay ? '#fff6da' : '#dde3f6';
+        }
+
+        function tzRenderAll() {
+            if (!tzGridEl) return;
+            const isDark = document.body.classList.contains('dark-mode');
+            tzZones.forEach(zone => {
+                const card = tzGridEl.querySelector(`.tz-card[data-id="${zone.id}"]`);
+                if (!card) return;
+                const p = TzUtils.zoneParts(zone.tz, tzSharedInstant);
+                const hour12 = p.hour % 12;
+                const hourAngle = ((hour12 + p.minute / 60) / 12) * 360;
+                const minAngle = (p.minute / 60) * 360;
+                const period = p.hour >= 12 ? 'PM' : 'AM';
+                const displayHour12 = hour12 === 0 ? 12 : hour12;
+
+                card.querySelector('[data-role="face"]').style.background = tzFaceTint(isDark, p.hour);
+                if (!(tzDrag && tzDrag.zoneId === zone.id && tzDrag.hand === 'hour')) {
+                    card.querySelector('[data-role="hourhand"]').style.transform = `rotate(${hourAngle}deg)`;
+                }
+                if (!(tzDrag && tzDrag.zoneId === zone.id && tzDrag.hand === 'minute')) {
+                    card.querySelector('[data-role="minhand"]').style.transform = `rotate(${minAngle}deg)`;
+                }
+                const timeInput = card.querySelector('[data-role="time"]');
+                if (document.activeElement !== timeInput) {
+                    timeInput.value = `${String(displayHour12).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+                }
+                card.querySelector('[data-role="ampm"]').textContent = period;
+                const dateInput = card.querySelector('[data-role="date"]');
+                if (document.activeElement !== dateInput) {
+                    dateInput.value = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+                }
+                card.querySelector('[data-role="weekday"]').textContent = p.weekday;
+                card.querySelector('[data-role="sub"]').textContent = TzUtils.zoneShortLabel(zone.tz, tzSharedInstant);
+            });
+
+            document.getElementById('tz-live-dot').classList.toggle('frozen', tzFrozen);
+            document.getElementById('tz-live-label').textContent = tzFrozen ? 'Set time' : 'Live';
+        }
+
+        // ---------- interaction: drag hands ----------
+        function tzAngleFromCenter(cx, cy, x, y) {
+            const dx = x - cx, dy = y - cy;
+            let deg = Math.atan2(dx, -dy) * 180 / Math.PI;
+            if (deg < 0) deg += 360;
+            return deg;
+        }
+
+        function tzStartDrag(e, zoneId, faceEl) {
+            const target = e.target.closest('[data-role="hourhand"], [data-role="minhand"]');
+            const hand = target && target.dataset.role === 'hourhand' ? 'hour' : 'minute';
+            const zone = tzZones.find(z => z.id === zoneId);
+            const p = TzUtils.zoneParts(zone.tz, tzSharedInstant);
+            const startAngle = ((p.hour % 12) + p.minute / 60) / 12 * 360;
+            tzDrag = {
+                zoneId, hand, faceEl,
+                period: p.hour >= 12 ? 1 : 0,   // 0 = AM, 1 = PM, at drag start
+                cumulative: startAngle,          // unwrapped running angle, for crossing detection
+                lastAngle: startAngle,
+            };
+            faceEl.setPointerCapture(e.pointerId);
+            tzFrozen = true;
+            tzOnDragMove(e);
+            faceEl.addEventListener('pointermove', tzOnDragMove);
+            faceEl.addEventListener('pointerup', tzEndDrag, { once: true });
+        }
+
+        function tzOnDragMove(e) {
+            if (!tzDrag) return;
+            const rect = tzDrag.faceEl.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+            const deg = tzAngleFromCenter(cx, cy, e.clientX, e.clientY);
+            const card = tzGridEl.querySelector(`.tz-card[data-id="${tzDrag.zoneId}"]`);
+
+            if (tzDrag.hand === 'hour') {
+                // Track the shortest-path delta so a full lap past 12 o'clock is detected
+                // as a genuine AM<->PM crossing, the way a real clock's hour hand would carry on.
+                let delta = deg - tzDrag.lastAngle;
+                if (delta > 180) delta -= 360;
+                if (delta < -180) delta += 360;
+                tzDrag.cumulative += delta;
+                tzDrag.lastAngle = deg;
+                const laps = Math.floor(tzDrag.cumulative / 360);
+                const period = (((tzDrag.period + laps) % 2) + 2) % 2; // 0 = AM, 1 = PM
+
+                card.querySelector('[data-role="hourhand"]').style.transform = `rotate(${deg}deg)`;
+                const hour12Float = deg / 360 * 12;
+                const hour12 = Math.floor(hour12Float);
+                const minute = Math.round((hour12Float - hour12) * 60) % 60;
+                const displayHour12 = hour12 === 0 ? 12 : hour12;
+                card.querySelector('[data-role="time"]').value = `${String(displayHour12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                card.querySelector('[data-role="ampm"]').textContent = period === 0 ? 'AM' : 'PM';
+                card.querySelector('[data-role="minhand"]').style.transform = `rotate(${(minute / 60) * 360}deg)`;
+            } else {
+                card.querySelector('[data-role="minhand"]').style.transform = `rotate(${deg}deg)`;
+                const minute = Math.round((deg / 360) * 60) % 60;
+                const cur = card.querySelector('[data-role="time"]').value.split(':');
+                card.querySelector('[data-role="time"]').value = `${cur[0]}:${String(minute).padStart(2, '0')}`;
+            }
+        }
+
+        function tzEndDrag(e) {
+            if (!tzDrag) return;
+            const zoneId = tzDrag.zoneId;
+            tzDrag.faceEl.removeEventListener('pointermove', tzOnDragMove);
+            tzDrag = null;
+            tzApplyManualEdit(zoneId);
+        }
+
+        // ---------- manual edits (typed time/date, AM/PM toggle, or after drag) ----------
+        function tzApplyManualEdit(zoneId) {
+            const zone = tzZones.find(z => z.id === zoneId);
+            const card = tzGridEl.querySelector(`.tz-card[data-id="${zoneId}"]`);
+            const timeVal = card.querySelector('[data-role="time"]').value;
+            const dateVal = card.querySelector('[data-role="date"]').value;
+            const period = card.querySelector('[data-role="ampm"]').textContent.trim().toUpperCase();
+            const m = /^(\d{1,2}):(\d{1,2})$/.exec(timeVal.trim());
+            if (!m) { tzRenderAll(); return; }
+            const [, hStr, minStr] = m;
+            let hour12 = Math.min(12, Math.max(1, parseInt(hStr, 10)));
+            const min = Math.min(59, Math.max(0, parseInt(minStr, 10)));
+            const base = hour12 % 12; // 12 -> 0
+            const h = period === 'PM' ? base + 12 : base;
+            let y, mo, d;
+            if (dateVal) {
+                [y, mo, d] = dateVal.split('-').map(Number);
+            } else {
+                const p = TzUtils.zoneParts(zone.tz, tzSharedInstant);
+                y = p.year; mo = p.month; d = p.day;
+            }
+            tzFrozen = true;
+            tzSharedInstant = TzUtils.zonedTimeToUtc(zone.tz, y, mo, d, h, min);
+            tzRenderAll();
+        }
+
+        function tzTogglePeriod(zoneId) {
+            const zone = tzZones.find(z => z.id === zoneId);
+            const p = TzUtils.zoneParts(zone.tz, tzSharedInstant);
+            const newHour = (p.hour + 12) % 24;
+            tzFrozen = true;
+            tzSharedInstant = TzUtils.zonedTimeToUtc(zone.tz, p.year, p.month, p.day, newHour, p.minute);
+            tzRenderAll();
+        }
+
+        // ---------- now / live ----------
+        function tzGoToNow() {
+            tzFrozen = false;
+            tzSharedInstant = new Date();
+            tzRenderAll();
+        }
+
+        function tzInit() {
+            tzGridEl = document.getElementById('tz-grid');
+            tzZones = tzDefaultZones();
+            tzNextId = tzZones.length;
+            tzRebuildGrid();
+            setInterval(() => {
+                if (!tzFrozen) {
+                    tzSharedInstant = new Date();
+                    tzRenderAll();
+                }
+            }, 1000);
+        }
+
         function switchTab(tabName) {
             // Save current content before switching
             if (document.getElementById('yaml-json-panel').classList.contains('active')) {
@@ -1359,6 +1768,9 @@ end`;
                 droolsInputEditor.refresh();
                 droolsRulesEditor.refresh();
                 droolsOutputEditor.refresh();
+            } else if (tabName === 'timezone') {
+                document.querySelector('.tab:nth-child(6)').classList.add('active');
+                document.getElementById('timezone-panel').classList.add('active');
             }
         }
 
@@ -1983,6 +2395,7 @@ end`;
             initEditors();
             updateInfoText();
             updateJsonInfoText();
+            tzInit();
         });
     </script>
 </body>
